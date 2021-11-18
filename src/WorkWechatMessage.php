@@ -69,7 +69,7 @@ class WorkWechatMessage
 
     // 该方法是 预留的重写入口，主要作用：
     // 当本地服务器循环请求企业微信服务器循环拉取数据时，可以通过该方法，处理每一次从微信服务器拉下来的数据
-    public function handleOnePullLog(array $chats, int $min_seq, int $max_seq, int $count)
+    protected function handleOnePullLog(array $chats, int $min_seq, int $max_seq, int $count)
     {
         Tool::loggerCustom(__CLASS__, __FUNCTION__, '预留的重写入口', [
             '$min_seq' => $min_seq,
@@ -87,7 +87,7 @@ class WorkWechatMessage
     // 该方法是 预留的重写入口，
     // 本地服务器每一次从微信服务器拉取到的数据，都可能包含多条 加密后的聊天记录，而解密需要循环，针对每一条记录做操作
     // 此时，可以直接在 循环体中做业务逻辑的处理
-    public function handleOneMessage(array $item = [])
+    protected function handleOneMessage(array $item = [])
     {
         Tool::loggerCustom(__CLASS__, __FUNCTION__, '预留的重写入口', [
             'msgid' => $item['msgid']
@@ -188,7 +188,7 @@ class WorkWechatMessage
 
     }
 
-    public function downloadMedia($msg)
+    protected function downloadMedia($msg)
     {
         $msgtype = $msg['msgtype'] ?? '';
         if (!$msgtype) return $msg;
