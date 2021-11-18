@@ -75,7 +75,7 @@ class WorkWechatMessage
             '$min_seq' => $min_seq,
             '$max_seq' => $max_seq,
             '$count' => $count
-        ], true);
+        ]);
 //        TestWxWorkChatMessagePullLog::query()->create([
 //            'min_seq' => $min_seq,
 //            'max_seq' => $max_seq,
@@ -91,7 +91,7 @@ class WorkWechatMessage
     {
         Tool::loggerCustom(__CLASS__, __FUNCTION__, '预留的重写入口', [
             'msgid' => $item['msgid']
-        ], true);
+        ]);
 //        TestWxWorkChatMessage::query()->create([
 //            'seq' => $item['seq'], // 消息的seq值，标识消息的序号
 //            'msgid' => $item['msgid'], // 消息id，消息的唯一标识，企业可以使用此字段进行消息去重。
