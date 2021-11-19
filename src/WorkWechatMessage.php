@@ -183,7 +183,7 @@ class WorkWechatMessage
         try {
             $chats = $this->sdk->getChatData($seq, $limit);
             $chats = json_decode($chats, true);
-//            Tool::loggerCustom(__CLASS__, __FUNCTION__, '企业微信 => 拉取聊天数据 => $chats', $chats);
+            Tool::loggerCustom(__CLASS__, __FUNCTION__, '单次拉取数据', $chats);
 
             $count = count($chats['chatdata']);
             if ($count == 0) return Tool::resFailMsg('数据已全部拉取');
@@ -218,7 +218,7 @@ class WorkWechatMessage
                 $msg = json_decode($msg, true);
 
                 $msg = $this->downloadMedia($msg);
-                Tool::loggerCustom(__CLASS__, __FUNCTION__, '企业微信 => 拉取聊天数据 => $msg', $msg);
+                Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $msg);
 
                 $val['msg'] = $msg;
 
