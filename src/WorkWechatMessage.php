@@ -190,6 +190,20 @@ class WorkWechatMessage
 
             $min_seq = $max_seq = 0;
             foreach ($chats['chatdata'] as $key => &$val) {
+
+                $end_time = time();
+                $used_time = $end_time - $start_time;
+                $log_content = [
+                    '$num' => $this->num,
+                    '$key' => $key,
+                    '$start_time' => date('Y-m-d H:i:s', $start_time),
+                    '$used_time' => $used_time,
+                    '$seq' => $val['seq'],
+                    '$msgid' => $val['msgid'],
+                ];
+                echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
+                $this->num++;
+
                 if ($key == 0) {
                     $min_seq = $max_seq = $val['seq'];
                 } else {
@@ -210,20 +224,6 @@ class WorkWechatMessage
 
                 // 单条聊天内容的处理
                 $this->handleOneMessage($val);
-
-                $end_time = time();
-                $used_time = $end_time - $start_time;
-                $log_content = [
-                    '$num' => $this->num,
-                    '$key' => $key,
-                    '$start_time' => date('Y-m-d H:i:s', $start_time),
-                    '$used_time' => $used_time,
-                    '$seq' => $val['seq'],
-                    '$msgid' => $val['msgid'],
-                ];
-                echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
-
-                $this->num++;
             }
 
             // 单次拉取的处理
