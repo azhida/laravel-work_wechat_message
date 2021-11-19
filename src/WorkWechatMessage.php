@@ -17,6 +17,7 @@ class WorkWechatMessage
     private $private_key = ''; // 私匙
     private $media_to_cloud = false; // 媒体文件是否上传云端
     private $sdk = null; // sdk 实例
+    private $num = 0;
 
     public function __construct()
     {
@@ -120,7 +121,7 @@ class WorkWechatMessage
         $echo = '全部数据拉取完成';
 
         $count = 0; // 从 0 开始计数
-        $num = 0;
+
         while (true) {
 
             $start_time_1 = time();
@@ -132,7 +133,6 @@ class WorkWechatMessage
 
                 $start_seq = $res['meta']['max_seq'];
                 $count += $res['meta']['count'];
-                $num++;
 
                 if ($total_count > 0 && $count >= $total_count) break;
 
@@ -145,8 +145,8 @@ class WorkWechatMessage
             $used_time_1 = $end_time_1 - $start_time_1;
             $used_time = $end_time_1 - $start_time;
             $log_content = [
+                '$num' => $this->num,
                 '$count' => $count,
-                '$num' => $num,
                 '$start_time_1' => date('Y-m-d H:i:s', $start_time_1),
                 '$end_time_1' => date('Y-m-d H:i:s', $end_time_1),
                 '$used_time_1' => $used_time_1,
@@ -160,8 +160,8 @@ class WorkWechatMessage
         $used_time = $end_time - $start_time;
 
         $log_content = [
+            '$num' => $this->num,
             '$count' => $count,
-            '$num' => $num,
             '$start_time' => date('Y-m-d H:i:s', $start_time),
             '$end_time' => date('Y-m-d H:i:s', $end_time),
             '$used_time' => $used_time,
@@ -214,12 +214,14 @@ class WorkWechatMessage
                 $end_time = time();
                 $used_time = $end_time - $start_time;
                 $log_content = [
-                    '$count' => $count,
+                    '$num' => $this->num,
                     '$key' => $key,
                     '$start_time' => date('Y-m-d H:i:s', $start_time),
                     '$used_time' => $used_time,
                 ];
                 echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
+
+                $this->num++;
             }
 
             // 单次拉取的处理
