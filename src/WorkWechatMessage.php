@@ -113,19 +113,27 @@ class WorkWechatMessage
      * @param int $limit 每次拉取的条数，最大 1000
      * @param int $total_count 本次要拉取的总条数，够了就停止拉取，0 则不限条数，一直拉取直到全部拉完所有数据才停止
      */
-    public function getChatDataBatch(int $start_seq = 0, int $limit = 1000, int $total_count = 0)
+    public function getChatDataBatch(int $start_seq = 0, int $limit = 100, int $total_count = 0)
     {
+        $start_time = time();
+
         $echo = '全部数据拉取完成';
 
         $count = 0; // 从 0 开始计数
+        $num = 0;
         while (true) {
+
+            $start_time_1 = time();
+
             try {
                 $res = $this->getChatData($start_seq, $limit);
                 Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', $res);
+                Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', ['$res']);
                 if ($res['code'] != '0' || $res['meta']['is_end']) break;
 
                 $start_seq = $res['meta']['max_seq'];
                 $count += $res['meta']['count'];
+                $num++;
 
                 if ($total_count > 0 && $count >= $total_count) break;
 
@@ -133,9 +141,34 @@ class WorkWechatMessage
                 $echo = $exception->getMessage();
                 break;
             }
+
+            $end_time_1 = time();
+            $used_time_1 = $end_time_1 - $start_time_1;
+            $used_time = $end_time_1 - $start_time;
+            $log_content = [
+                '$count' => $count,
+                '$num' => $num,
+                '$start_time_1' => date('Y-m-d H:i:s', $start_time_1),
+                '$end_time_1' => date('Y-m-d H:i:s', $end_time_1),
+                '$used_time_1' => $used_time_1,
+                '$used_time' => $used_time,
+            ];
+            Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', $log_content, true);
+
         }
 
-        echo $echo;
+        $end_time = time();
+        $used_time = $end_time - $start_time;
+
+        $log_content = [
+            '$count' => $count,
+            '$num' => $num,
+            '$start_time' => date('Y-m-d H:i:s', $start_time),
+            '$end_time' => date('Y-m-d H:i:s', $end_time),
+            '$used_time' => $used_time,
+            '$echo' => $echo,
+        ];
+        Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', $log_content, true);
     }
 
     /**
@@ -144,8 +177,10 @@ class WorkWechatMessage
      * @return array
      * @throws \Exception
      */
-    public function getChatData(int $seq = 0, int $limit = 1000): array
+    public function getChatData(int $seq = 0, int $limit = 100): array
     {
+        $start_time = time();
+
         try {
             $chats = $this->sdk->getChatData($seq, $limit);
             $chats = json_decode($chats, true);
@@ -176,6 +211,16 @@ class WorkWechatMessage
 
                 // 单条聊天内容的处理
                 $this->handleOneMessage($val);
+
+                $end_time = time();
+                $used_time = $end_time - $start_time;
+                $log_content = [
+                    '$count' => $count,
+                    '$key' => $key,
+                    '$start_time' => date('Y-m-d H:i:s', $start_time),
+                    '$used_time' => $used_time,
+                ];
+                Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
             }
 
             // 单次拉取的处理
