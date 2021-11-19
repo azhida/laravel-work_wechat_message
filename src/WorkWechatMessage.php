@@ -217,8 +217,9 @@ class WorkWechatMessage
                 $msg = $this->sdk->decryptData($decryptRandKey, $val['encrypt_chat_msg']);
                 $msg = json_decode($msg, true);
 
+                Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 1', $msg);
                 $msg = $this->downloadMedia($msg);
-                Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $msg);
+                Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 2', $msg);
 
                 $val['msg'] = $msg;
 
