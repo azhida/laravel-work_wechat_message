@@ -17,9 +17,8 @@ class WorkWechatMessage
     private $private_key = ''; // 私匙
     private $sdk = null; // sdk 实例
 
-    public function __construct(array $config = [])
+    public function __construct()
     {
-        $this->config = $config;
         $this->initSdk();
     }
 
@@ -33,9 +32,11 @@ class WorkWechatMessage
         if (class_exists('\WxworkFinanceSdk')) {
 
             // 开始检查各项参数配置
-            if (empty($this->config)) {
-                $this->config = $config = config('wechat.work.msg_save');
+            $config = config('wechat.work.msg_save');
+            if (empty($config)) {
+                $config = config('services.work_wechat_message.msg_save');
             }
+            $this->config = $config;
             $corp_id = $config['corp_id'] ?? '';
             $secret = $config['secret'] ?? '';
             $private_key_file_path = $config['private_key_file_path'] ?? '';
