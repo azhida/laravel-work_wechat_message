@@ -254,9 +254,9 @@ class WorkWechatMessage
         else if ($msgtype == 'voice') { // 语音 amr
             $file_name = "{$msg['msgid']}.amr";
         }
-        else if ($msgtype == 'video') { // 视频 mp4  emotion
-            $file_name = "{$msg['msgid']}.mp4";
-        }
+//        else if ($msgtype == 'video') { // 视频 mp4  emotion
+//            $file_name = "{$msg['msgid']}.mp4";
+//        }
         else if ($msgtype == 'emotion') { // 表情 要看 $msg['emotion']['type'] , 表情类型，png或者gif.1表示gif 2表示png。Uint32类型
             if ($msg['emotion']['type'] == 1) {
                 $file_name = "{$msg['msgid']}.gif";
