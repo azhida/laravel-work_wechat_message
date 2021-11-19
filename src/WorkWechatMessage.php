@@ -128,7 +128,6 @@ class WorkWechatMessage
             try {
                 $res = $this->getChatData($start_seq, $limit);
                 Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', $res);
-                Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', ['$res']);
                 if ($res['code'] != '0' || $res['meta']['is_end']) break;
 
                 $start_seq = $res['meta']['max_seq'];
@@ -153,7 +152,7 @@ class WorkWechatMessage
                 '$used_time_1' => $used_time_1,
                 '$used_time' => $used_time,
             ];
-            Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', $log_content, true);
+            echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', $log_content, true);
 
         }
 
@@ -168,7 +167,7 @@ class WorkWechatMessage
             '$used_time' => $used_time,
             '$echo' => $echo,
         ];
-        Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', $log_content, true);
+        echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', $log_content, true);
     }
 
     /**
@@ -220,7 +219,7 @@ class WorkWechatMessage
                     '$start_time' => date('Y-m-d H:i:s', $start_time),
                     '$used_time' => $used_time,
                 ];
-                Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
+                echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
             }
 
             // 单次拉取的处理
