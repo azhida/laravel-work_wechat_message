@@ -218,8 +218,8 @@ class WorkWechatMessage
                 $msg = json_decode($msg, true);
 
                 Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 1', $msg);
-                $msg = $this->downloadMedia($msg);
-                Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 2', $msg);
+//                $msg = $this->downloadMedia($msg); // 由于 有些媒体文件太大，导致下载耗费的时间太长，所以，此处先解析，暂不下载媒体文件，等拉取并解析的这部分数据入库以后，程序空闲时，再去统一下载媒体文件
+//                Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 2', $msg);
 
                 $val['msg'] = $msg;
 
