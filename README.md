@@ -2,20 +2,85 @@
 
 <p align="center"> 企业微信消息 for Laravel.</p>
 
-
 ## Installing
 
 ```shell
 $ composer require azhida/laravel-work_wechat_message -vvv
 ```
 
+## 配置
+
+两种方式，任选其一
+
+- 1.在 `config/services.php` 添加参数
+
+```php
+<?php
+
+return [
+
+    // ...
+
+    // 企业微信消息
+    'work_wechat_message' => [
+        // 会话内容存档配置信息
+        'msg_save' => [
+            'corp_id' => env('WECHAT_WORK_CORP_ID', ''), // 企业ID
+            'secret'   => env('WECHAT_WORK_MSG_SAVE_SECRET', ''), // 
+
+            // server config
+            'token' => env('WECHAT_WORK_MSG_SAVE_TOKEN', ''), //
+            'aes_key' => env('WECHAT_WORK_MSG_SAVE_AES_KEY', ''), //
+
+            'private_key_file_path' => env('WECHAT_WORK_PRIVATE_KEY_FILE_PATH', ''), // work_msg_save_private_key 私匙文件地址，写 绝对路径 
+        ]
+        // ...
+    ]
+
+];
+```
+
+- 2.如果存在 `config/wechat.php` ，可以在 `config/wechat.php` 企业微信那个模块 添加参数【因为我安装了 `overtrue/laravel-wechat` 有了这个文件】
+
+```php
+<?php
+
+return [
+    // ...
+  
+    /*
+     * 企业微信
+     */
+     'work' => [
+         // ...
+
+         // 会话内容存档配置信息
+         'msg_save' => [
+             'corp_id' => env('WECHAT_WORK_CORP_ID', ''), // 企业ID
+             'secret'   => env('WECHAT_WORK_MSG_SAVE_SECRET', ''), // 会话内容存档 secret
+
+             // server config
+             'token' => env('WECHAT_WORK_MSG_SAVE_TOKEN', ''), // 
+             'aes_key' => env('WECHAT_WORK_MSG_SAVE_AES_KEY', ''), //
+
+             'private_key_file_path' => env('WECHAT_WORK_PRIVATE_KEY_FILE_PATH', ''), // work_msg_save_private_key 私匙文件地址，写 绝对路径
+         ]
+     ],  
+];
+```
+
+然后在 `.env` 添加所需配置项就好了
+
 ## Usage
 
 - 创建一个服务类并继承 WorkWechatMessage 类
+
 ```
 vim app/Services/WorkWeChatMessageSaveService.php
 ```
+
 - WorkWechatMessage 类 内容示例
+
 ```
 <?php
 
@@ -61,9 +126,11 @@ class WorkWeChatMessageSaveService extends WorkWechatMessage
 }
 
 ```
+
 - 调用
 
 单次拉取
+
 ```
         try {
             $workWeChatMessageSaveService = new \App\Services\WorkWeChatMessageSaveService();
@@ -75,6 +142,7 @@ class WorkWeChatMessageSaveService extends WorkWechatMessage
 ```
 
 批量循环拉取
+
 ```
         try {
             $workWeChatMessageSaveService = new \App\Services\WorkWeChatMessageSaveService();
@@ -87,7 +155,6 @@ class WorkWeChatMessageSaveService extends WorkWechatMessage
 ## Problem
 
 如果提示 `WxworkFinanceSdk 类 不存在` 或者 `WxworkFinanceSdk 扩展未安装`，则先去安装 `wxwork_finance_sdk`扩展，安装方法：https://gitee.com/wghzhida/php7-wxwork-finance-sdk
-
 
 ## Contributing
 
