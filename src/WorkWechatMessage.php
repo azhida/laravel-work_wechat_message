@@ -15,6 +15,7 @@ class WorkWechatMessage
 
     private $config = [];
     private $private_key = ''; // 私匙
+    private $media_to_cloud = false; // 媒体文件是否上传云端
     private $sdk = null; // sdk 实例
 
     public function __construct()
@@ -49,6 +50,8 @@ class WorkWechatMessage
             }
             $this->private_key = file_get_contents($this->config['private_key_file_path']);
             if (!$this->private_key) throw new InvalidArgumentException("WxworkFinanceSdk 初始化失败：文件 {$private_key_file_path} 内容为空");
+
+            $this->media_to_cloud = $config['media_to_cloud'] ?? false;
 
             $proxy_host = $config['proxy_host'] ?? '';
             $proxy_password = $config['proxy_password'] ?? '';
@@ -229,12 +232,14 @@ class WorkWechatMessage
 
         $this->sdk->downloadMedia($sdkFileId, $file_path);
 
-        try {
-            $res = Storage::putFileAs("work_wechat_messages/{$msgtype}", $file_path, $file_name);
-            $file_url = Storage::url($res);
-        } catch (\Exception $exception) {
-            $storage_disk_name = config('filesystems.default');
-            Tool::loggerCustom(__CLASS__, __FUNCTION__,  "上传 {$storage_disk_name} 云盘失败，异常信息：{$exception->getMessage()}", []);
+        if ($this->media_to_cloud) { // 媒体文件是否上传云端
+            try {
+                $res = Storage::putFileAs("work_wechat_messages/{$msgtype}", $file_path, $file_name);
+                $file_url = Storage::url($res);
+            } catch (\Exception $exception) {
+                $storage_disk_name = config('filesystems.default');
+                Tool::loggerCustom(__CLASS__, __FUNCTION__, "上传 {$storage_disk_name} 云盘失败，异常信息：{$exception->getMessage()}", []);
+            }
         }
         $log_content = [
             '$file_path' => $file_path,
