@@ -128,7 +128,7 @@ class WorkWechatMessage
 
             try {
                 $res = $this->getChatData($start_seq, $limit);
-                Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', $res);
+//                Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', $res);
                 if ($res['code'] != '0' || $res['meta']['is_end']) break;
 
                 $start_seq = $res['meta']['max_seq'];
@@ -183,7 +183,7 @@ class WorkWechatMessage
         try {
             $chats = $this->sdk->getChatData($seq, $limit);
             $chats = json_decode($chats, true);
-            Tool::loggerCustom(__CLASS__, __FUNCTION__, '企业微信 => 拉取聊天数据 => $chats', $chats);
+//            Tool::loggerCustom(__CLASS__, __FUNCTION__, '企业微信 => 拉取聊天数据 => $chats', $chats);
 
             $count = count($chats['chatdata']);
             if ($count == 0) return Tool::resFailMsg('数据已全部拉取');
@@ -218,6 +218,8 @@ class WorkWechatMessage
                     '$key' => $key,
                     '$start_time' => date('Y-m-d H:i:s', $start_time),
                     '$used_time' => $used_time,
+                    '$seq' => $val['seq'],
+                    '$msgid' => $val['msgid'],
                 ];
                 echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
 
