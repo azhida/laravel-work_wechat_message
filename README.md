@@ -84,6 +84,11 @@ class WorkWeChatMessageSaveService extends WorkWechatMessage
         }
 ```
 
+## Problem
+
+如果提示 `WxworkFinanceSdk 类 不存在` 或者 `WxworkFinanceSdk 扩展未安装`，则先去安装 `wxwork_finance_sdk`扩展，安装方法：https://gitee.com/wghzhida/php7-wxwork-finance-sdk
+
+
 ## Contributing
 
 You can contribute in one of three ways:
