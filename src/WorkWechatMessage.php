@@ -211,11 +211,7 @@ class WorkWechatMessage
                     if ($val['seq'] > $max_seq) $max_seq = $val['seq'];
                 }
 
-                $decryptRandKey = null;
-                $privateKey = $this->private_key;
-                openssl_private_decrypt(base64_decode($val['encrypt_random_key']), $decryptRandKey, $privateKey, OPENSSL_PKCS1_PADDING);
-                $msg = $this->sdk->decryptData($decryptRandKey, $val['encrypt_chat_msg']);
-                $msg = json_decode($msg, true);
+                $msg = $this->decryptMessage($val); // 解密消息
 
                 Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 1', $msg);
                 // 由于 有些媒体文件太大，导致下载耗费的时间太长，所以，此处可以先解析，暂不下载媒体文件，等拉取并解析的这部分数据入库以后，程序空闲时，再去统一下载媒体文件
@@ -241,6 +237,20 @@ class WorkWechatMessage
             throw new \Exception('数据拉取失败：' . $exception->getMessage());
         }
 
+    }
+
+    // 解密消息 -- 逐条解密
+    protected function decryptMessage(array $chatdata_item)
+    {
+        try {
+            $decryptRandKey = null;
+            $privateKey = $this->private_key;
+            openssl_private_decrypt(base64_decode($chatdata_item['encrypt_random_key']), $decryptRandKey, $privateKey, OPENSSL_PKCS1_PADDING);
+            $msg = $this->sdk->decryptData($decryptRandKey, $chatdata_item['encrypt_chat_msg']);
+            return json_decode($msg, true);
+        } catch (\Exception $exception) {
+            throw new \Exception('数据解密失败：' . $exception->getMessage(), $exception->getCode(), $exception);
+        }
     }
 
     protected function downloadMedia($msg)
