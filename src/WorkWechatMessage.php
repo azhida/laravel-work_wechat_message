@@ -92,11 +92,15 @@ class WorkWechatMessage
 //            'count' => $count,
 //            'res' => $chats,
 //        ]);
+
+        // 批量解密
+//        $this->decryptMessageBatch($chats['chatdata']);
     }
 
-    // 该方法是 预留的重写入口，
-    // 本地服务器每一次从微信服务器拉取到的数据，都可能包含多条 加密后的聊天记录，而解密需要循环，针对每一条记录做操作
-    // 此时，可以直接在 循环体中做业务逻辑的处理
+    /**
+     * 该方法是 预留的重写入口，可以直接在该方法中做业务逻辑的处理
+     * @param array $item 单条包含已解密的会话数据
+     */
     protected function handleOneMessage(array $item = [])
     {
         Tool::loggerCustom(__CLASS__, __FUNCTION__, '预留的重写入口', [
