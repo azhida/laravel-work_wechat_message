@@ -2,8 +2,10 @@
 
 namespace Azhida\LaravelWorkWechatMessage;
 
+use Azhida\LaravelWorkWechatMessage\Exceptions\DecryptMessageException;
 use Azhida\LaravelWorkWechatMessage\Exceptions\Exception;
 use Azhida\LaravelWorkWechatMessage\Exceptions\InvalidArgumentException;
+use Azhida\LaravelWorkWechatMessage\Exceptions\PullChatDataException;
 use Illuminate\Support\Facades\Storage;
 use Azhida\Tools\Tool;
 
@@ -17,7 +19,10 @@ class WorkWechatMessage
     private $private_key = ''; // 私匙
     private $media_to_cloud = false; // 媒体文件是否上传云端
     private $sdk = null; // sdk 实例
-    private $num = 0;
+
+    private $num = 0; // 计数器，从0开始
+    private $is_end = false; // 是否拉取完毕
+    private $max_seq = 0; // 已拉取的最大seq
 
     public function __construct()
     {
@@ -112,147 +117,135 @@ class WorkWechatMessage
      * 每一次的
      * @param int $start_seq 开始拉取的消息序号
      * @param int $limit 每次拉取的条数，最大 1000
-     * @param int $total_count 本次要拉取的总条数，够了就停止拉取，0 则不限条数，一直拉取直到全部拉完所有数据才停止
      */
-    public function getChatDataBatch(int $start_seq = 0, int $limit = 100, int $total_count = 0)
+    public function getChatDataBatch(int $start_seq = 0, int $limit = 1000)
     {
         $start_time = time();
-
-        $echo = '全部数据拉取完成';
-
-        $count = 0; // 从 0 开始计数
-
+        $echo = '数据已全部拉取';
         while (true) {
-
-            $start_time_1 = time();
-
             try {
-                $res = $this->getChatData($start_seq, $limit);
-//                Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', $res);
-                if ($res['code'] != '0' || $res['meta']['is_end']) break;
-
-                $start_seq = $res['meta']['max_seq'];
-                $count += $res['meta']['count'];
-
-                if ($total_count > 0 && $count >= $total_count) break;
-
+                $this->getChatData($start_seq, $limit);
+                if ($this->is_end) break;
+                $start_seq = $this->max_seq;
             } catch (\Exception $exception) {
                 $echo = $exception->getMessage();
                 break;
             }
-
-            $end_time_1 = time();
-            $used_time_1 = $end_time_1 - $start_time_1;
-            $used_time = $end_time_1 - $start_time;
+            $end_time = time();
+            $used_time = $end_time - $start_time;
             $log_content = [
                 '$num' => $this->num,
-                '$count' => $count,
-                '$start_time_1' => date('Y-m-d H:i:s', $start_time_1),
-                '$end_time_1' => date('Y-m-d H:i:s', $end_time_1),
-                '$used_time_1' => $used_time_1,
+                '$start_seq' => $start_seq,
+                '$start_time' => date('Y-m-d H:i:s', $start_time),
+                '$end_time' => date('Y-m-d H:i:s', $end_time),
                 '$used_time' => $used_time,
             ];
-            echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', $log_content, true);
-
+            echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据--执行中', $log_content, true);
         }
 
         $end_time = time();
         $used_time = $end_time - $start_time;
-
         $log_content = [
             '$num' => $this->num,
-            '$count' => $count,
+            '$start_seq' => $start_seq,
             '$start_time' => date('Y-m-d H:i:s', $start_time),
             '$end_time' => date('Y-m-d H:i:s', $end_time),
             '$used_time' => $used_time,
             '$echo' => $echo,
         ];
-        echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据', $log_content, true);
+        echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据--结束', $log_content, true);
     }
 
     /**
+     * 拉取聊天数据 -- 单次
      * @param int $seq
      * @param int $limit
      * @return array
      * @throws \Exception
      */
-    public function getChatData(int $seq = 0, int $limit = 100): array
+    public function getChatData(int $seq = 0, int $limit = 1000): array
     {
-        $start_time = time();
-
         try {
             $chats = $this->sdk->getChatData($seq, $limit);
             $chats = json_decode($chats, true);
             Tool::loggerCustom(__CLASS__, __FUNCTION__, '单次拉取数据', $chats);
 
             $count = count($chats['chatdata']);
-            if ($count == 0) return Tool::resFailMsg('数据已全部拉取');
+            if ($count == 0) throw new PullChatDataException('数据已全部拉取');
+            if ($count < $limit) $this->is_end = true;
 
-            $min_seq = $max_seq = 0;
-            foreach ($chats['chatdata'] as $key => &$val) {
-
-                $end_time = time();
-                $used_time = $end_time - $start_time;
-                $log_content = [
-                    '$num' => $this->num,
-                    '$key' => $key,
-                    '$start_time' => date('Y-m-d H:i:s', $start_time),
-                    '$used_time' => $used_time,
-                    '$seq' => $val['seq'],
-                    '$msgid' => $val['msgid'],
-                ];
-                echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
-                $this->num++;
-
-                if ($key == 0) {
-                    $min_seq = $max_seq = $val['seq'];
-                } else {
-                    if ($val['seq'] < $min_seq) $min_seq = $val['seq'];
-                    if ($val['seq'] > $max_seq) $max_seq = $val['seq'];
-                }
-
-                $msg = $this->decryptMessage($val); // 解密消息
-
-                Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 1', $msg);
-                // 由于 有些媒体文件太大，导致下载耗费的时间太长，所以，此处可以先解析，暂不下载媒体文件，等拉取并解析的这部分数据入库以后，程序空闲时，再去统一下载媒体文件
-                // 大家也可以重写这个方法
-                $msg = $this->downloadMedia($msg);
-                Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 2', $msg);
-
-                $val['msg'] = $msg;
-
-                // 单条聊天内容的处理
-                $this->handleOneMessage($val);
-            }
+            $seqs = array_column($chats['chatdata'], 'seq');
+            $min_seq = min($seqs);
+            $this->max_seq = $max_seq = max($seqs);
 
             // 单次拉取的处理
             $this->handleOnePullLog($chats, $min_seq, $max_seq, $count);
 
-            $is_end = false;
-            if ($count < $limit) $is_end = true;
-            $meta = ['max_seq' => $max_seq, 'count' => $count, 'is_end' => $is_end];
-            return Tool::resSuccessMsg('数据拉取成功', $chats, $meta);
+            // 批量解密
+//            $this->decryptMessageBatch($chats['chatdata']);
+
+            return $chats['chatdata'];
 
         } catch (\Exception $exception) {
             throw new \Exception('数据拉取失败：' . $exception->getMessage());
         }
-
     }
 
-    // 解密消息 -- 逐条解密
+    // 解密消息 -- 批量
+    public function decryptMessageBatch(array $chatdata)
+    {
+        $start_time = time();
+        foreach ($chatdata as $key => &$val) {
+
+            $end_time = time();
+            $used_time = $end_time - $start_time;
+            $log_content = [
+                '$num' => $this->num,
+                '$key' => $key,
+                '$start_time' => date('Y-m-d H:i:s', $start_time),
+                '$used_time' => $used_time,
+                '$seq' => $val['seq'],
+                '$msgid' => $val['msgid'],
+            ];
+            echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
+            $this->num++;
+
+            if ($key == 0) {
+                $min_seq = $max_seq = $val['seq'];
+            } else {
+                if ($val['seq'] < $min_seq) $min_seq = $val['seq'];
+                if ($val['seq'] > $max_seq) $max_seq = $val['seq'];
+            }
+
+            $msg = $this->decryptMessage($val); // 解密消息
+            Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 1', $msg);
+
+            $val['msg'] = $msg;
+
+            // 单条聊天内容的处理
+            $this->handleOneMessage($val);
+        }
+    }
+
+    // 解密消息 -- 单条
     public function decryptMessage(array $chatdata_item)
     {
         try {
             $decryptRandKey = null;
             $privateKey = $this->private_key;
             openssl_private_decrypt(base64_decode($chatdata_item['encrypt_random_key']), $decryptRandKey, $privateKey, OPENSSL_PKCS1_PADDING);
-            $msg = $this->sdk->decryptData($decryptRandKey, $chatdata_item['encrypt_chat_msg']);
+            $msg = $this->sdk->decryptData($decryptRandKey, $chatdata_item['encrypt_chat_msg']); // 解密
+
+            $msg = $this->downloadMedia($msg); // 下载媒体文件
+            Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 2', $msg);
+
             return json_decode($msg, true);
         } catch (\Exception $exception) {
-            throw new \Exception('数据解密失败：' . $exception->getMessage(), $exception->getCode(), $exception);
+            throw new DecryptMessageException('数据解密失败：' . $exception->getMessage(), $exception->getCode(), $exception);
         }
     }
 
+    // 下载媒体文件 todo 待优化完善
     protected function downloadMedia($msg)
     {
         $msgtype = $msg['msgtype'] ?? '';
