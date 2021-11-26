@@ -240,7 +240,7 @@ class WorkWechatMessage
     }
 
     // 解密消息 -- 逐条解密
-    protected function decryptMessage(array $chatdata_item)
+    public function decryptMessage(array $chatdata_item)
     {
         try {
             $decryptRandKey = null;
