@@ -17,7 +17,7 @@ class WorkWechatMessage
 
     private $config = [];
     private $private_key = ''; // 私匙
-    private $media_to_cloud = false; // 媒体文件是否上传云端
+    private $media_to_disk = ''; // 媒体文件存储的磁盘
     private $sdk = null; // sdk 实例
 
     private $num = 0; // 计数器，从0开始
@@ -57,7 +57,7 @@ class WorkWechatMessage
             $this->private_key = file_get_contents($this->config['private_key_file_path']);
             if (!$this->private_key) throw new InvalidArgumentException("WxworkFinanceSdk 初始化失败：文件 {$private_key_file_path} 内容为空");
 
-            $this->media_to_cloud = $config['media_to_cloud'] ?? false;
+            $this->media_to_disk = $config['media_to_disk'] ?? '';
 
             $proxy_host = $config['proxy_host'] ?? '';
             $proxy_password = $config['proxy_password'] ?? '';
@@ -99,13 +99,17 @@ class WorkWechatMessage
 
     /**
      * 该方法是 预留的重写入口，可以直接在该方法中做业务逻辑的处理
-     * @param array $item 单条包含已解密的会话数据
+     * @param array $msg 单条包含已解密的会话数据
      */
     protected function handleOneMessage(array $item = [])
     {
         Tool::loggerCustom(__CLASS__, __FUNCTION__, '预留的重写入口', [
             'msgid' => $item['msgid']
         ]);
+
+        $msg = $this->downloadMedia($item['msg']); // 下载媒体文件
+        Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 2', $msg);
+
 //        TestWxWorkChatMessage::query()->create([
 //            'seq' => $item['seq'], // 消息的seq值，标识消息的序号
 //            'msgid' => $item['msgid'], // 消息id，消息的唯一标识，企业可以使用此字段进行消息去重。
@@ -115,6 +119,7 @@ class WorkWechatMessage
     }
 
     /**
+     * 该方法可以重写，也可以直接调用：
      * 拉取聊天数据 -- 批量
      * 考虑到聊天内容数据量很大，该方法不做最终的数据返回，
      * 逻辑的处理，应该在 handleOnePullLog() 和 handleOneMessage() 两个方法中处理
@@ -122,13 +127,13 @@ class WorkWechatMessage
      * @param int $start_seq 开始拉取的消息序号
      * @param int $limit 每次拉取的条数，最大 1000
      */
-    public function getChatDataBatch(int $start_seq = 0, int $limit = 1000)
+    public function pullMessagesBatch(int $start_seq = 0, int $limit = 1000)
     {
         $start_time = time();
         $echo = '数据已全部拉取';
         while (true) {
             try {
-                $this->getChatData($start_seq, $limit);
+                $this->pullMessages($start_seq, $limit);
                 if ($this->is_end) break;
                 $start_seq = $this->max_seq;
             } catch (\Exception $exception) {
@@ -160,14 +165,8 @@ class WorkWechatMessage
         echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据--结束', $log_content, true);
     }
 
-    /**
-     * 拉取聊天数据 -- 单次
-     * @param int $seq
-     * @param int $limit
-     * @return array
-     * @throws \Exception
-     */
-    public function getChatData(int $seq = 0, int $limit = 1000): array
+    // 拉取聊天数据 -- 单次
+    public function pullMessages(int $seq = 0, int $limit = 1000): array
     {
         try {
             $chats = $this->sdk->getChatData($seq, $limit);
@@ -239,10 +238,6 @@ class WorkWechatMessage
             $privateKey = $this->private_key;
             openssl_private_decrypt(base64_decode($chatdata_item['encrypt_random_key']), $decryptRandKey, $privateKey, OPENSSL_PKCS1_PADDING);
             $msg = $this->sdk->decryptData($decryptRandKey, $chatdata_item['encrypt_chat_msg']); // 解密
-
-            $msg = $this->downloadMedia($msg); // 下载媒体文件
-            Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 2', $msg);
-
             return json_decode($msg, true);
         } catch (\Exception $exception) {
             throw new DecryptMessageException('数据解密失败：' . $exception->getMessage(), $exception->getCode(), $exception);
@@ -250,7 +245,7 @@ class WorkWechatMessage
     }
 
     // 下载媒体文件 todo 待优化完善
-    protected function downloadMedia($msg)
+    public function downloadMedia($msg)
     {
         $msgtype = $msg['msgtype'] ?? '';
         if (!$msgtype) return $msg;
@@ -263,9 +258,9 @@ class WorkWechatMessage
         else if ($msgtype == 'voice') { // 语音 amr
             $file_name = "{$msg['msgid']}.amr";
         }
-//        else if ($msgtype == 'video') { // 视频 mp4  emotion
-//            $file_name = "{$msg['msgid']}.mp4";
-//        }
+        else if ($msgtype == 'video') { // 视频 mp4  emotion
+            $file_name = "{$msg['msgid']}.mp4";
+        }
         else if ($msgtype == 'emotion') { // 表情 要看 $msg['emotion']['type'] , 表情类型，png或者gif.1表示gif 2表示png。Uint32类型
             if ($msg['emotion']['type'] == 1) {
                 $file_name = "{$msg['msgid']}.gif";
@@ -290,10 +285,10 @@ class WorkWechatMessage
 
         $this->sdk->downloadMedia($sdkFileId, $file_path);
 
-        if ($this->media_to_cloud) { // 媒体文件是否上传云端
+        if ($this->media_to_disk && $this->media_to_disk != 'public') { // 媒体文件存储到指定磁盘中
             try {
-                $res = Storage::putFileAs("work_wechat_messages/{$msgtype}", $file_path, $file_name);
-                $file_url = Storage::url($res);
+                $res = Storage::disk($this->media_to_disk)->putFileAs("work_wechat_messages/{$msgtype}", $file_path, $file_name);
+                $file_url = Storage::disk($this->media_to_disk)->url($res);
             } catch (\Exception $exception) {
                 $storage_disk_name = config('filesystems.default');
                 Tool::loggerCustom(__CLASS__, __FUNCTION__, "上传 {$storage_disk_name} 云盘失败，异常信息：{$exception->getMessage()}", []);

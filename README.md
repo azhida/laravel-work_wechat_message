@@ -33,7 +33,7 @@ return [
             'aes_key' => env('WECHAT_WORK_MSG_SAVE_AES_KEY', ''), //
 
             'private_key_file_path' => env('WECHAT_WORK_PRIVATE_KEY_FILE_PATH', ''), // work_msg_save_private_key 私匙文件地址，写 绝对路径
-            'media_to_cloud' => env('WECHAT_WORK_MSG_SAVE_MEDIA_TO_CLOUD', false), // 媒体文件是否上传云端
+            'media_to_disk' => env('WECHAT_WORK_MSG_SAVE_MEDIA_TO_DISK', 'public'), // 媒体文件是否上传存储的磁盘
         ]
         // ...
     ]
@@ -65,7 +65,7 @@ return [
              'aes_key' => env('WECHAT_WORK_MSG_SAVE_AES_KEY', ''), //
 
              'private_key_file_path' => env('WECHAT_WORK_PRIVATE_KEY_FILE_PATH', ''), // work_msg_save_private_key 私匙文件地址，写 绝对路径
-             'media_to_cloud' => env('WECHAT_WORK_MSG_SAVE_MEDIA_TO_CLOUD', false), // 媒体文件是否上传云端
+             'media_to_disk' => env('WECHAT_WORK_MSG_SAVE_MEDIA_TO_DISK', 'public'), // 媒体文件是否上传存储的磁盘
          ]
      ],  
 ];
