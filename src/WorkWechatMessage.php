@@ -107,8 +107,8 @@ class WorkWechatMessage
             'msgid' => $item['msgid']
         ]);
 
-        $msg = $this->downloadMedia($item['msg']); // 下载媒体文件
-        Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 2', $msg);
+//        $msg = $this->downloadMedia($item['msg']); // 下载媒体文件
+//        Tool::loggerCustom(__CLASS__, __FUNCTION__, '下载媒体文件 - 2', $msg);
 
 //        TestWxWorkChatMessage::query()->create([
 //            'seq' => $item['seq'], // 消息的seq值，标识消息的序号
@@ -166,10 +166,10 @@ class WorkWechatMessage
     }
 
     // 拉取聊天数据 -- 单次
-    public function pullMessages(int $seq = 0, int $limit = 1000): array
+    public function pullMessages(int $start_seq = 0, int $limit = 1000): array
     {
         try {
-            $chats = $this->sdk->getChatData($seq, $limit);
+            $chats = $this->sdk->getChatData($start_seq, $limit);
             $chats = json_decode($chats, true);
             Tool::loggerCustom(__CLASS__, __FUNCTION__, '单次拉取数据', $chats);
 
@@ -187,8 +187,6 @@ class WorkWechatMessage
             // 批量解密
 //            $this->decryptMessageBatch($chats['chatdata']);
 
-            return $chats['chatdata'];
-
         } catch (\Exception $exception) {
             throw new \Exception('数据拉取失败：' . $exception->getMessage());
         }
@@ -198,7 +196,7 @@ class WorkWechatMessage
     public function decryptMessageBatch(array $chatdata)
     {
         $start_time = time();
-        foreach ($chatdata as $key => &$val) {
+        foreach ($chatdata as $key => &$chatdata_item) {
 
             $end_time = time();
             $used_time = $end_time - $start_time;
@@ -207,26 +205,26 @@ class WorkWechatMessage
                 '$key' => $key,
                 '$start_time' => date('Y-m-d H:i:s', $start_time),
                 '$used_time' => $used_time,
-                '$seq' => $val['seq'],
-                '$msgid' => $val['msgid'],
+                '$seq' => $chatdata_item['seq'],
+                '$msgid' => $chatdata_item['msgid'],
             ];
             echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
             $this->num++;
 
             if ($key == 0) {
-                $min_seq = $max_seq = $val['seq'];
+                $min_seq = $max_seq = $chatdata_item['seq'];
             } else {
-                if ($val['seq'] < $min_seq) $min_seq = $val['seq'];
-                if ($val['seq'] > $max_seq) $max_seq = $val['seq'];
+                if ($chatdata_item['seq'] < $min_seq) $min_seq = $chatdata_item['seq'];
+                if ($chatdata_item['seq'] > $max_seq) $max_seq = $chatdata_item['seq'];
             }
 
-            $msg = $this->decryptMessage($val); // 解密消息
-            Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 1', $msg);
+            $msg = $this->decryptMessage($chatdata_item); // 解密消息
+            Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 1', $chatdata_item);
 
-            $val['msg'] = $msg;
+            $chatdata_item['msg'] = $msg;
 
             // 单条聊天内容的处理
-            $this->handleOneMessage($val);
+            $this->handleOneMessage($chatdata_item);
         }
     }
 
@@ -244,8 +242,14 @@ class WorkWechatMessage
         }
     }
 
-    // 下载媒体文件 todo 待优化完善
-    public function downloadMedia($msg)
+    // 下载媒体文件 todo 待优化完善 考虑媒体文件可能比较大，所以开发者自行安排下载的时机，这里只是提供一个样例，当然如果你懒得写，也可以直接调用就好了
+
+    /**
+     * 下载媒体文件
+     * @param array $msg 解密后的消息体
+     * @return array|mixed|null
+     */
+    public function downloadMedia(array $msg)
     {
         $msgtype = $msg['msgtype'] ?? '';
         if (!$msgtype) return $msg;
