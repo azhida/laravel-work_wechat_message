@@ -166,7 +166,7 @@ class WorkWechatMessage
     }
 
     // 拉取聊天数据 -- 单次
-    public function pullMessages(int $start_seq = 0, int $limit = 1000): array
+    public function pullMessages(int $start_seq = 0, int $limit = 1000)
     {
         try {
             $chats = $this->sdk->getChatData($start_seq, $limit);
