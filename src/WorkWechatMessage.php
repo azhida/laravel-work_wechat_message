@@ -195,19 +195,6 @@ class WorkWechatMessage
         $start_time = time();
         foreach ($chatdata as $key => &$chatdata_item) {
 
-            $end_time = time();
-            $used_time = $end_time - $start_time;
-            $log_content = [
-                '$num' => $this->num,
-                '$key' => $key,
-                '$start_time' => date('Y-m-d H:i:s', $start_time),
-                '$used_time' => $used_time,
-                '$seq' => $chatdata_item['seq'],
-                '$msgid' => $chatdata_item['msgid'],
-            ];
-            echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
-            $this->num++;
-
             if ($key == 0) {
                 $min_seq = $max_seq = $chatdata_item['seq'];
             } else {
@@ -216,9 +203,21 @@ class WorkWechatMessage
             }
 
             $msg = $this->decryptMessage($chatdata_item); // 解密消息
-            Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容 - 1', $chatdata_item);
-
             $chatdata_item['msg'] = $msg;
+
+            $end_time = time();
+            $used_time = $end_time - $start_time;
+            $log_content = [
+                '$num' => $this->num,
+                '$key' => $key,
+                '$start_time' => date('Y-m-d H:i:s', $start_time),
+                '$used_time' => $used_time,
+                '$seq' => $chatdata_item['seq'],
+                '$msgtype' => $msg['msgtype'],
+                '$msgid' => $chatdata_item['msgid'],
+            ];
+            echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
+            $this->num++;
 
             // 单条聊天内容的处理
             $this->handleOneMessage($chatdata_item);
