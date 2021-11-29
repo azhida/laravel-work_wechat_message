@@ -204,11 +204,6 @@ class WorkWechatMessage
 
             $msg = $this->decryptMessage($chatdata_item); // 解密消息
 
-            // 解密后要及时下载媒体文件，因为媒体文件也只有三天内的下载期限
-            $msg = $this->downloadMedia($msg);
-
-            $chatdata_item['msg'] = $msg;
-
             $end_time = time();
             $used_time = $end_time - $start_time;
             $log_content = [
@@ -222,6 +217,11 @@ class WorkWechatMessage
             ];
             echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
             $this->num++;
+
+            // 解密后要及时下载媒体文件，因为媒体文件也只有三天内的下载期限
+            $msg = $this->downloadMedia($msg);
+
+            $chatdata_item['msg'] = $msg;
 
             // 单条聊天内容的处理
             $this->handleOneMessage($chatdata_item);
