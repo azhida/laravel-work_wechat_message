@@ -136,7 +136,7 @@ class WorkWeChatMessageSaveService extends WorkWechatMessage
 ```
         try {
             $workWeChatMessageSaveService = new \App\Services\WorkWeChatMessageSaveService();
-            $res = $workWeChatMessageSaveService->getChatData(0, 100);
+            $res = $workWeChatMessageSaveService->pullMessages(0, 100);
             dd($res);
         } catch (\Exception $exception) {
             dd($exception->getMessage());
@@ -148,7 +148,7 @@ class WorkWeChatMessageSaveService extends WorkWechatMessage
 ```
         try {
             $workWeChatMessageSaveService = new \App\Services\WorkWeChatMessageSaveService();
-            $workWeChatMessageSaveService->getChatDataBatch(0, 100);
+            $workWeChatMessageSaveService->pullMessagesBatch(0, 100);
         } catch (\Exception $exception) {
             dd($exception->getMessage());
         }
