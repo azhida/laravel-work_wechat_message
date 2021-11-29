@@ -182,7 +182,7 @@ class WorkWechatMessage
             $this->handleOnePullLog($chats, $min_seq, $max_seq, $count);
 
             // 批量解密
-//            $this->decryptMessageBatch($chats['chatdata']);
+            $this->decryptMessageBatch($chats['chatdata']);
 
         } catch (\Exception $exception) {
             throw new \Exception('数据拉取失败：' . $exception->getMessage());
