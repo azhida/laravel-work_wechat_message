@@ -107,9 +107,6 @@ class WorkWechatMessage
             'msgid' => $item['msgid']
         ]);
 
-//        $msg = $this->downloadMedia($item['msg']); // 下载媒体文件
-//        Tool::loggerCustom(__CLASS__, __FUNCTION__, '下载媒体文件 - 2', $msg);
-
 //        TestWxWorkChatMessage::query()->create([
 //            'seq' => $item['seq'], // 消息的seq值，标识消息的序号
 //            'msgid' => $item['msgid'], // 消息id，消息的唯一标识，企业可以使用此字段进行消息去重。
@@ -236,6 +233,8 @@ class WorkWechatMessage
             $privateKey = $this->private_key;
             openssl_private_decrypt(base64_decode($chatdata_item['encrypt_random_key']), $decryptRandKey, $privateKey, OPENSSL_PKCS1_PADDING);
             $msg = $this->sdk->decryptData($decryptRandKey, $chatdata_item['encrypt_chat_msg']); // 解密
+            // 解密后要及时下载媒体文件，因为媒体文件也只有三天内的下载期限
+            $msg = $this->downloadMedia($msg);
             return json_decode($msg, true);
         } catch (\Exception $exception) {
             throw new DecryptMessageException('数据解密失败：' . $exception->getMessage(), $exception->getCode(), $exception);
@@ -246,10 +245,11 @@ class WorkWechatMessage
 
     /**
      * 下载媒体文件
+     * 注意：下载媒体文件也有期限，跟拉取消息一样为 3天内
      * @param array $msg 解密后的消息体
      * @return array|mixed|null
      */
-    public function downloadMedia(array $msg)
+    protected function downloadMedia(array $msg)
     {
         $msgtype = $msg['msgtype'] ?? '';
         if (!$msgtype) return $msg;
