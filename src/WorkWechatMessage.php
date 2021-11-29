@@ -212,13 +212,13 @@ class WorkWechatMessage
             $end_time = time();
             $used_time = $end_time - $start_time;
             $log_content = [
-                '$num' => $this->num,
-                '$key' => $key,
-                '$start_time' => date('Y-m-d H:i:s', $start_time),
-                '$used_time' => $used_time,
-                '$seq' => $chatdata_item['seq'],
-                '$msgtype' => $msg['msgtype'],
-                '$msgid' => $chatdata_item['msgid'],
+                'num' => $this->num,
+                'key' => $key,
+                'start_time' => date('Y-m-d H:i:s', $start_time),
+                'used_time' => $used_time,
+                'seq' => $chatdata_item['seq'],
+                'msgtype' => $msg['msgtype'],
+                'msgid' => $chatdata_item['msgid'],
             ];
             echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
             $this->num++;
