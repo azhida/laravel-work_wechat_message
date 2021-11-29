@@ -203,6 +203,10 @@ class WorkWechatMessage
             }
 
             $msg = $this->decryptMessage($chatdata_item); // 解密消息
+
+            // 解密后要及时下载媒体文件，因为媒体文件也只有三天内的下载期限
+            $msg = $this->downloadMedia($msg);
+
             $chatdata_item['msg'] = $msg;
 
             $end_time = time();
@@ -232,8 +236,6 @@ class WorkWechatMessage
             $privateKey = $this->private_key;
             openssl_private_decrypt(base64_decode($chatdata_item['encrypt_random_key']), $decryptRandKey, $privateKey, OPENSSL_PKCS1_PADDING);
             $msg = $this->sdk->decryptData($decryptRandKey, $chatdata_item['encrypt_chat_msg']); // 解密
-            // 解密后要及时下载媒体文件，因为媒体文件也只有三天内的下载期限
-            $msg = $this->downloadMedia($msg);
             return json_decode($msg, true);
         } catch (\Exception $exception) {
             throw new DecryptMessageException('数据解密失败：' . $exception->getMessage(), $exception->getCode(), $exception);
