@@ -6,6 +6,7 @@ use Azhida\LaravelWorkWechatMessage\Exceptions\DecryptMessageException;
 use Azhida\LaravelWorkWechatMessage\Exceptions\Exception;
 use Azhida\LaravelWorkWechatMessage\Exceptions\InvalidArgumentException;
 use Azhida\LaravelWorkWechatMessage\Exceptions\PullChatDataException;
+use Azhida\Tools\Log;
 use Illuminate\Support\Facades\Storage;
 use Azhida\Tools\Tool;
 
@@ -81,7 +82,7 @@ class WorkWechatMessage
     // 当本地服务器循环请求企业微信服务器循环拉取数据时，可以通过该方法，处理每一次从微信服务器拉下来的数据
     protected function handleOnePullLog(array $chats, int $min_seq, int $max_seq, int $count)
     {
-        Tool::loggerCustom(__CLASS__, __FUNCTION__, '预留的重写入口', [
+        Log::loggerCustom(__CLASS__, __FUNCTION__, '预留的重写入口', [
             '$min_seq' => $min_seq,
             '$max_seq' => $max_seq,
             '$count' => $count
@@ -93,8 +94,6 @@ class WorkWechatMessage
 //            'res' => $chats,
 //        ]);
 
-        // 批量解密
-//        $this->decryptMessageBatch($chats['chatdata']);
     }
 
     /**
@@ -103,7 +102,7 @@ class WorkWechatMessage
      */
     protected function handleOneMessage(array $item = [])
     {
-        Tool::loggerCustom(__CLASS__, __FUNCTION__, '预留的重写入口', [
+        Log::loggerCustom(__CLASS__, __FUNCTION__, '预留的重写入口', [
             'msgid' => $item['msgid']
         ]);
 
@@ -146,7 +145,7 @@ class WorkWechatMessage
                 '$end_time' => date('Y-m-d H:i:s', $end_time),
                 '$used_time' => $used_time,
             ];
-            echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据--执行中', $log_content, true);
+            echo Log::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据--执行中', $log_content, true);
         }
 
         $end_time = time();
@@ -159,7 +158,7 @@ class WorkWechatMessage
             '$used_time' => $used_time,
             '$echo' => $echo,
         ];
-        echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据--结束', $log_content, true);
+        echo Log::loggerCustom(__CLASS__, __FUNCTION__, '批量拉取数据--结束', $log_content, true);
     }
 
     // 拉取聊天数据 -- 单次
@@ -168,7 +167,7 @@ class WorkWechatMessage
         try {
             $chats = $this->sdk->getChatData($start_seq, $limit);
             $chats = json_decode($chats, true);
-            Tool::loggerCustom(__CLASS__, __FUNCTION__, '单次拉取数据', $chats);
+            Log::loggerCustom(__CLASS__, __FUNCTION__, '单次拉取数据', $chats);
 
             $count = count($chats['chatdata']);
             if ($count == 0) throw new PullChatDataException('数据已全部拉取');
@@ -185,7 +184,7 @@ class WorkWechatMessage
             $this->decryptMessageBatch($chats['chatdata']);
 
         } catch (\Exception $exception) {
-            throw new \Exception('数据拉取失败：' . $exception->getMessage());
+            throw new PullChatDataException('数据拉取失败：' . $exception->getMessage(), $exception);
         }
     }
 
@@ -202,7 +201,11 @@ class WorkWechatMessage
                 if ($chatdata_item['seq'] > $max_seq) $max_seq = $chatdata_item['seq'];
             }
 
-            $msg = $this->decryptMessage($chatdata_item); // 解密消息
+            try {
+                $msg = $this->decryptMessage($chatdata_item); // 解密消息
+            } catch (\Exception $exception) {
+                throw new DecryptMessageException($exception->getMessage(), $exception->getCode(), $exception);
+            }
 
             $end_time = time();
             $used_time = $end_time - $start_time;
@@ -215,7 +218,7 @@ class WorkWechatMessage
                 'msgtype' => $msg['msgtype'] ?? '',
                 'msgid' => $chatdata_item['msgid'],
             ];
-            echo Tool::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
+            echo Log::loggerCustom(__CLASS__, __FUNCTION__, '解密会话内容', $log_content, true);
             $this->num++;
 
             // 解密后要及时下载媒体文件，因为媒体文件也只有三天内的下载期限
@@ -296,7 +299,7 @@ class WorkWechatMessage
                 $file_url = Storage::disk($this->media_to_disk)->url($res);
             } catch (\Exception $exception) {
                 $storage_disk_name = config('filesystems.default');
-                Tool::loggerCustom(__CLASS__, __FUNCTION__, "上传 {$storage_disk_name} 云盘失败，异常信息：{$exception->getMessage()}", []);
+                Log::loggerCustom(__CLASS__, __FUNCTION__, "上传 {$storage_disk_name} 云盘失败，异常信息：{$exception->getMessage()}", []);
             }
         }
         $log_content = [
@@ -304,7 +307,7 @@ class WorkWechatMessage
             '$file_url' => $file_url,
             '$file_url_local' => $file_url_local
         ];
-        Tool::loggerCustom(__CLASS__, __FUNCTION__, '文件存储路径：', $log_content);
+        Log::loggerCustom(__CLASS__, __FUNCTION__, '文件存储路径：', $log_content);
 
         $msg[$msgtype]['file_url'] = $file_url;
         $msg[$msgtype]['file_url_local'] = $file_url_local;

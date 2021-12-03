@@ -9,7 +9,7 @@
         }
     ],
     "require": {
-        "azhida/tools": "^0.2.2"
+        "azhida/tools": "^0.3.0"
     },
     "autoload": {
         "psr-4": {
