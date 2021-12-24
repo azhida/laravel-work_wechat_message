@@ -184,7 +184,7 @@ class WorkWechatMessage
             $this->decryptMessageBatch($chats['chatdata']);
 
         } catch (\Exception $exception) {
-            throw new PullChatDataException('数据拉取失败：' . $exception->getMessage(), $exception);
+            throw new PullChatDataException('数据拉取失败：' . $exception->getMessage(), $exception->getCode(), $exception);
         }
     }
 
